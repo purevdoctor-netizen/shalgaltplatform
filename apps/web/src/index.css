@@ -1,0 +1,112 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: light;
+  }
+
+  * {
+    @apply border-slate-200;
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-slate-50 font-sans text-slate-900;
+    /* iPhone-ий "notch" хэсгийг тооцно */
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  /* Гарын товчлуураар шилжихэд фокус тод харагдана (хүртээмж) */
+  :focus-visible {
+    @apply outline-none ring-2 ring-primary ring-offset-2 ring-offset-white;
+  }
+
+  /* Утсан дээр input автоматаар томрохоос сэргийлнэ (16px-ээс багагүй) */
+  input,
+  select,
+  textarea {
+    font-size: 16px;
+  }
+
+  @media (min-width: 640px) {
+    input,
+    select,
+    textarea {
+      font-size: inherit;
+    }
+  }
+}
+
+@layer components {
+  /* Хүртээмжийн шаардлага: дарах талбай ≥ 44×44px */
+  .touch-target {
+    @apply min-h-touch min-w-touch;
+  }
+
+  .card {
+    @apply rounded-2xl border border-slate-200 bg-white shadow-soft;
+  }
+
+  .skeleton {
+    @apply animate-pulse rounded-lg bg-slate-200;
+  }
+}
+
+/* ------------------------------------------------------------------------ */
+/* Хэвлэх (QR дэлгэц)                                                        */
+/* ------------------------------------------------------------------------ */
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 12mm;
+  }
+
+  body {
+    background: #fff !important;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+
+  .print-only {
+    display: block !important;
+  }
+
+  .print-page {
+    page-break-after: always;
+    break-after: page;
+  }
+
+  .print-page:last-child {
+    page-break-after: auto;
+    break-after: auto;
+  }
+}
+
+.print-only {
+  display: none;
+}
+
+/* ------------------------------------------------------------------------ */
+/* html5-qrcode-ийн үндсэн загварыг дарж бичнэ                                */
+/* ------------------------------------------------------------------------ */
+#qr-reader {
+  @apply overflow-hidden rounded-2xl border border-slate-200;
+}
+
+#qr-reader video {
+  @apply w-full rounded-2xl object-cover;
+}
+
+#qr-reader img[alt='Info icon'],
+#qr-reader__dashboard_section_csr span,
+#qr-reader__status_span {
+  display: none !important;
+}

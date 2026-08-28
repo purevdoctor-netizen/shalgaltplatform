@@ -1,0 +1,104 @@
+# =============================================================================
+#  Render.com — Blueprint
+#
+#  Нэг вэб сервис API болон PWA хоёуланг нь үйлчилнэ (SERVE_WEB_DIR).
+#  Ингэснээр үнэгүй тарифын ганц сервисэд бүх зүйл багтана.
+#
+#  Өгөгдлийн сан: Neon (тусад нь үүсгэнэ) — Render-ийн үнэгүй Postgres
+#  30 хоногийн дараа УСТДАГ тул ашиглахгүй.
+#
+#  Дэлгэрэнгүй заавар: CLOUD-DEPLOY.md
+# =============================================================================
+
+services:
+  - type: web
+    name: shalgalt
+    runtime: node
+    plan: free
+    region: frankfurt
+    branch: main
+
+    # pnpm workspace — corepack-оор яг тэр хувилбарыг идэвхжүүлнэ.
+    #
+    # ⚠ `migrate deploy` БИШ `db push` ашиглана: одоо байгаа migration файлууд
+    # SQLite-д зориулагдсан (PRAGMA, BLOB) тул PostgreSQL дээр ажиллахгүй.
+    # `db push` нь schema-г шууд тааруулдаг бөгөөд аль ч provider дээр ажиллана.
+    buildCommand: |
+      corepack enable &&
+      corepack prepare pnpm@9.12.3 --activate &&
+      pnpm install --frozen-lockfile=false &&
+      pnpm db:push &&
+      pnpm build
+
+    startCommand: node apps/api/dist/index.js
+
+    healthCheckPath: /api/health/ping
+
+    envVars:
+      - key: NODE_VERSION
+        value: '20'
+
+      - key: APP_ENV
+        value: production
+
+      - key: TZ
+        value: Asia/Ulaanbaatar
+
+      # Render нь `PORT`-ыг өөрөө өгнө — апп түүнийг автоматаар авна
+      - key: API_HOST
+        value: 0.0.0.0
+
+      # PWA-г ижил сервисээс үйлчилнэ
+      - key: SERVE_WEB_DIR
+        value: apps/web/dist
+
+      # --- Өгөгдлийн сан (Neon) ---
+      - key: DATABASE_PROVIDER
+        value: postgresql
+      - key: DATABASE_URL
+        sync: false # Neon-оос авсан холболтын мөрийг Render дээр гараар оруулна
+
+      # --- Хаяг ---
+      # Эхний deploy-ийн дараа бодит хаягаараа солино (ж: https://shalgalt.onrender.com)
+      - key: WEB_ORIGIN
+        sync: false
+      - key: CORS_ALLOW_LAN
+        value: 'false'
+
+      # QR кодод шингэх хаяг. ХООСОН = багшийн нээсэн хаягийг дагана.
+      - key: VITE_PUBLIC_APP_URL
+        value: ''
+      - key: VITE_API_BASE_URL
+        value: ''
+      - key: VITE_APP_NAME
+        value: Шалгалтын платформ
+
+      # --- Эхний админ (данс үүссэний дараа устгана) ---
+      - key: BOOTSTRAP_ADMIN_USERNAME
+        sync: false
+      - key: BOOTSTRAP_ADMIN_PASSWORD
+        sync: false
+      - key: BOOTSTRAP_ADMIN_NAME
+        sync: false
+
+      # --- Имэйл (Gmail App Password) ---
+      - key: SMTP_HOST
+        value: smtp.gmail.com
+      - key: SMTP_PORT
+        value: '465'
+      - key: SMTP_SECURE
+        value: 'true'
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASS
+        sync: false
+      - key: SMTP_FROM
+        sync: false
+
+      # --- Хурдны хязгаар ---
+      - key: RATE_LIMIT_WINDOW_MIN
+        value: '1'
+      - key: RATE_LIMIT_MAX
+        value: '300'
+      - key: MAX_UPLOAD_MB
+        value: '10'

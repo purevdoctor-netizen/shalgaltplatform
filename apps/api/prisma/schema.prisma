@@ -1,0 +1,293 @@
+// =============================================================================
+//  shalgalt-platform — Prisma schema
+//
+//  Нэг schema, хоёр provider:
+//    dev  : sqlite      DATABASE_URL="file:./dev.db"
+//    prod : postgresql  DATABASE_URL="postgresql://..."
+//
+//  ⚠ ASSUMPTION: Prisma-ийн `datasource.provider` нь env() хүлээж авдаггүй тул
+//  provider-ыг энд бичсэн. PostgreSQL руу шилжихдээ доорх мөрийг
+//  `postgresql` болгож `pnpm db:migrate` ажиллуулна (README §8).
+//
+//  ⚠ ASSUMPTION: SQLite нь `Json` scalar болон скаляр массивыг (`String[]`)
+//  дэмждэггүй тул JSON-г `String` баганад сериалчилж хадгална. Хөрвүүлэлтийг
+//  `src/lib/mappers.ts` хийнэ. Ингэснээр хоёр provider дээр ижил ажиллана.
+// =============================================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// -----------------------------------------------------------------------------
+// Хэрэглэгч — админ болон багш нар
+//
+// Админ нь багш бүрд нэг данс нээж өгнө. Сурагчид данс шаарддаггүй.
+// -----------------------------------------------------------------------------
+model User {
+  id String @id
+
+  /// Нэвтрэх нэр (жижиг үсгээр хадгална)
+  username String @unique
+
+  fullName String
+  email    String?
+
+  /// 'admin' | 'teacher'
+  role String @default("teacher")
+
+  /// scrypt(нууц үг, salt) — hex
+  passwordHash String
+  passwordSalt String
+
+  /// Админ түр нууц үг өгсөн бол эхний нэвтрэлтэд солиулна
+  mustChangePassword Boolean @default(true)
+
+  /// Идэвхгүй болгосон данс нэвтэрч чадахгүй (устгахын оронд)
+  isActive Boolean @default(true)
+
+  createdAt   String
+  updatedAt   String
+  lastLoginAt String?
+
+  /// Хэн үүсгэсэн (админы id)
+  createdById String?
+
+  sessions Session[]
+  exams    Exam[]
+
+  @@index([role])
+  @@index([isActive])
+  @@map("users")
+}
+
+// -----------------------------------------------------------------------------
+// Нэвтрэлтийн сесс — cookie доторх токены SHA-256 хэшийг id болгож хадгална
+// (сан алдагдсан ч идэвхтэй сессийг сэргээх боломжгүй)
+// -----------------------------------------------------------------------------
+model Session {
+  id     String @id
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt  String
+  expiresAt  String
+  lastSeenAt String
+
+  userAgent String?
+  ip        String?
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("sessions")
+}
+
+// -----------------------------------------------------------------------------
+// Шалгалт
+// -----------------------------------------------------------------------------
+model Exam {
+  id           String @id
+  title        String
+  subject      String
+  teacherName  String
+  teacherEmail String
+
+  /// Эзэмшигч багш. Хуучин (данс нэвтрэхээс өмнөх) өгөгдөлд null байж болно.
+  ownerId String?
+  owner   User?   @relation(fields: [ownerId], references: [id], onDelete: SetNull)
+
+  /// 32 тэмдэгтийн санамсаргүй токен — хуваалцах линкэнд ашиглана
+  teacherToken String @unique
+
+  examDate  String
+  createdAt String
+  updatedAt String
+
+  /// 'pre' | 'post'
+  mode String @default("pre")
+
+  /// 'draft' | 'active' | 'closed'
+  status String @default("draft")
+
+  /// 'online' | 'lan' | 'offlineQr'
+  deliveryMode String @default("online")
+
+  passThreshold Float @default(60)
+  durationMin   Int?
+
+  shuffle              Boolean @default(false)
+  showAnswersToStudent Boolean @default(true)
+  onePerPage           Boolean @default(false)
+
+  questions   Question[]
+  submissions Submission[]
+  reports     Report[]
+  emailQueue  EmailQueueItem[]
+
+  @@index([status])
+  @@index([ownerId])
+  @@map("exams")
+}
+
+// -----------------------------------------------------------------------------
+// Асуулт
+// -----------------------------------------------------------------------------
+model Question {
+  id     String @id
+  examId String
+  exam   Exam   @relation(fields: [examId], references: [id], onDelete: Cascade)
+
+  order Int
+
+  /// 'single' | 'multi' | 'truefalse' | 'short'
+  type String
+  text String
+
+  /// JSON: { id: string; text: string }[]
+  optionsJson String?
+
+  /// JSON: string[]
+  correctOptionIdsJson String?
+
+  /// JSON: string[]
+  acceptedAnswersJson String?
+
+  points Float  @default(1)
+  topic  String?
+
+  @@unique([examId, order])
+  @@index([examId])
+  @@map("questions")
+}
+
+// -----------------------------------------------------------------------------
+// Илгээлт
+// -----------------------------------------------------------------------------
+model Submission {
+  id     String @id
+  examId String
+  exam   Exam   @relation(fields: [examId], references: [id], onDelete: Cascade)
+
+  /// 'pre' | 'post'
+  mode String
+
+  /// sha256(овог|нэр|анги)
+  studentKey String
+
+  lastName  String
+  firstName String
+  className String
+
+  /// JSON: { questionId: string; value: AnswerValue }[]
+  answersJson String
+
+  score    Float
+  maxScore Float
+  percent  Float
+  passed   Boolean
+
+  startedAt   String
+  submittedAt String
+  durationSec Int
+
+  deviceId String
+
+  /// 'online' | 'lan' | 'answerQr' | 'manualCode'
+  source String @default("online")
+
+  /// 'pending' | 'synced' | 'conflict'
+  syncStatus String @default("synced")
+
+  /// Давхардсан илгээлтийн эх бичлэгийн id (conflict үед)
+  conflictOfId String?
+
+  createdAt String
+
+  /// Нэг сурагч нэг горимд НЭГ Л удаа. Давхардвал 409 буцна.
+  @@unique([examId, mode, studentKey])
+  @@index([examId, mode])
+  @@index([studentKey])
+  @@map("submissions")
+}
+
+// -----------------------------------------------------------------------------
+// Тайлан
+// -----------------------------------------------------------------------------
+model Report {
+  id     String @id
+  examId String
+  exam   Exam   @relation(fields: [examId], references: [id], onDelete: Cascade)
+
+  generatedAt String
+
+  /// JSON: ReportStats
+  statsJson String
+
+  /// .docx файлын нэр (харуулах зориулалттай)
+  docxFileName String?
+  docxSize     Int?
+
+  /// .docx файлын агуулга.
+  ///
+  /// Үүлэн платформууд (Render, Koyeb г.м.) дискийг ТҮР ЗУУР болгодог —
+  /// дахин асахад файл алга болно. Тиймээс агуулгыг өгөгдлийн санд хадгална.
+  docxData Bytes?
+
+  /// 'pending' | 'sent' | 'failed'
+  emailStatus String  @default("pending")
+  emailError  String?
+  emailSentAt String?
+
+  emailQueue EmailQueueItem[]
+
+  @@index([examId])
+  @@map("reports")
+}
+
+// -----------------------------------------------------------------------------
+// Имэйлийн дараалал
+// -----------------------------------------------------------------------------
+model EmailQueueItem {
+  id       String @id
+  reportId String
+  report   Report @relation(fields: [reportId], references: [id], onDelete: Cascade)
+
+  examId String
+  exam   Exam   @relation(fields: [examId], references: [id], onDelete: Cascade)
+
+  to        String
+  createdAt String
+  attempts  Int     @default(0)
+  lastError String?
+
+  /// 'pending' | 'sent' | 'failed'
+  status String @default("pending")
+
+  @@index([status])
+  @@map("email_queue")
+}
+
+// -----------------------------------------------------------------------------
+// Sync бүртгэл (оношилгоо, давхардлын түүх)
+// -----------------------------------------------------------------------------
+model SyncLog {
+  id        String @id
+  createdAt String
+
+  /// 'submission' | 'report' | 'email'
+  entity   String
+  entityId String
+
+  /// 'ok' | 'duplicate' | 'error'
+  status  String
+  message String?
+
+  deviceId String?
+
+  @@index([createdAt])
+  @@map("sync_log")
+}

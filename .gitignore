@@ -1,0 +1,54 @@
+# Хамаарал
+node_modules/
+.pnpm-store/
+
+# Build гаралт
+dist/
+build/
+*.tsbuildinfo
+apps/web/dev-dist/
+
+# Орчны хувьсагч (жишээ файлаас бусад нь орохгүй)
+.env
+.env.local
+.env.*.local
+.env.backup-*
+!.env.example
+
+# Суулгалтын үед үүсэх (DEPLOY.md)
+.tools/
+logs/
+backups/
+certs/
+
+# Өгөгдлийн сан (dev SQLite)
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3
+apps/api/prisma/dev.db*
+apps/api/prisma/lan.db*
+
+# Байршуулсан тайлангийн файлууд
+apps/api/uploads/
+
+# Тест / coverage
+coverage/
+.vitest/
+
+# Лог
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# Засварлагч / OS
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Түр файл
+.cache/
+.temp/

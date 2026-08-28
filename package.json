@@ -1,0 +1,51 @@
+{
+  "name": "shalgalt-platform",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Сурагчийн өмнөх/дараах үнэлгээний PWA платформ (pre/post assessment)",
+  "packageManager": "pnpm@9.12.3",
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=9.0.0"
+  },
+  "type": "module",
+  "scripts": {
+    "dev": "pnpm --parallel --filter \"@shalgalt/api\" --filter \"@shalgalt/web\" dev",
+    "dev:api": "pnpm --filter @shalgalt/api dev",
+    "dev:web": "pnpm --filter @shalgalt/web dev",
+    "lan": "pnpm --filter @shalgalt/api lan",
+    "build": "pnpm --filter @shalgalt/shared typecheck && pnpm --filter @shalgalt/api build && pnpm --filter @shalgalt/web build",
+    "typecheck": "pnpm -r typecheck",
+    "test": "pnpm -r test",
+    "test:watch": "pnpm --filter @shalgalt/shared test:watch",
+    "lint": "eslint . --max-warnings 0",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md,css,yml,yaml}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md,css,yml,yaml}\"",
+    "db:generate": "pnpm --filter @shalgalt/api db:generate",
+    "db:migrate": "pnpm --filter @shalgalt/api db:migrate",
+    "db:deploy": "pnpm --filter @shalgalt/api db:deploy",
+    "db:push": "pnpm --filter @shalgalt/api db:push",
+    "db:reset": "pnpm --filter @shalgalt/api db:reset",
+    "db:seed": "pnpm --filter @shalgalt/api db:seed",
+    "db:studio": "pnpm --filter @shalgalt/api db:studio",
+    "load": "tsx scripts/load.ts",
+    "gen:icons": "node scripts/gen-icons.mjs",
+    "clean": "pnpm -r exec rimraf dist node_modules/.vite && rimraf node_modules"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.15.0",
+    "@types/node": "^22.9.1",
+    "eslint": "^9.15.0",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-react-hooks": "^5.0.0",
+    "eslint-plugin-react-refresh": "^0.4.14",
+    "globals": "^15.12.0",
+    "prettier": "^3.3.3",
+    "rimraf": "^6.0.1",
+    "tsx": "^4.19.2",
+    "typescript": "^5.6.3",
+    "typescript-eslint": "^8.15.0",
+    "vitest": "^2.1.5"
+  }
+}

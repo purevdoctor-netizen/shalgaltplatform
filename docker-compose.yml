@@ -1,0 +1,126 @@
+# =============================================================================
+#  shalgalt-platform — Docker Compose
+#
+#  Хэрэглээ:
+#    Бүрэн стек (prod маягийн):   docker compose up -d --build
+#    Зөвхөн dev дэд бүтэц:        docker compose --profile dev up -d db mail
+#    Зогсоох:                     docker compose down
+#    Өгөгдөл хамт устгах:         docker compose down -v
+#
+#  Урьдчилсан нөхцөл: Docker Desktop + WSL2 backend ажиллаж байх.
+# =============================================================================
+
+name: shalgalt
+
+services:
+  # ---------------------------------------------------------------------------
+  # PostgreSQL — production өгөгдлийн сан
+  # ---------------------------------------------------------------------------
+  db:
+    image: postgres:16-alpine
+    container_name: shalgalt-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-shalgalt}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change_me_in_production}
+      POSTGRES_DB: ${POSTGRES_DB:-shalgalt}
+      # Кирилл өгөгдөлд UTF-8 collation
+      POSTGRES_INITDB_ARGS: '--encoding=UTF8 --locale=C'
+      TZ: ${TZ:-Asia/Ulaanbaatar}
+    ports:
+      - '${POSTGRES_PORT:-5432}:5432'
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-shalgalt} -d ${POSTGRES_DB:-shalgalt}']
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+    networks: [shalgalt-net]
+
+  # ---------------------------------------------------------------------------
+  # API — Express + Prisma
+  # ---------------------------------------------------------------------------
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    container_name: shalgalt-api
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      TZ: ${TZ:-Asia/Ulaanbaatar}
+      API_HOST: 0.0.0.0
+      API_PORT: 3000
+      DATABASE_PROVIDER: postgresql
+      DATABASE_URL: postgresql://${POSTGRES_USER:-shalgalt}:${POSTGRES_PASSWORD:-change_me_in_production}@db:5432/${POSTGRES_DB:-shalgalt}?schema=public
+      WEB_ORIGIN: ${WEB_ORIGIN:-http://localhost:8080}
+      CORS_ALLOW_LAN: ${CORS_ALLOW_LAN:-true}
+      RATE_LIMIT_WINDOW_MIN: ${RATE_LIMIT_WINDOW_MIN:-1}
+      RATE_LIMIT_MAX: ${RATE_LIMIT_MAX:-60}
+      UPLOAD_DIR: /app/uploads
+      MAX_UPLOAD_MB: ${MAX_UPLOAD_MB:-10}
+      SMTP_HOST: ${SMTP_HOST:-mail}
+      SMTP_PORT: ${SMTP_PORT:-1025}
+      SMTP_SECURE: ${SMTP_SECURE:-false}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      SMTP_FROM: ${SMTP_FROM:-Шалгалтын платформ <noreply@shalgalt.local>}
+      EMAIL_MAX_ATTEMPTS: ${EMAIL_MAX_ATTEMPTS:-5}
+    ports:
+      - '${API_PORT:-3000}:3000'
+    volumes:
+      - api-uploads:/app/uploads
+    networks: [shalgalt-net]
+
+  # ---------------------------------------------------------------------------
+  # Web — React PWA (nginx). /api/* хүсэлтийг api сервис рүү дамжуулна.
+  # ---------------------------------------------------------------------------
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+      args:
+        VITE_APP_NAME: ${VITE_APP_NAME:-Шалгалтын платформ}
+        # Хоосон = ижил origin (nginx proxy). QR-т ашиглах нийтийн хаягийг заана.
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-}
+        VITE_PUBLIC_APP_URL: ${VITE_PUBLIC_APP_URL:-http://localhost:8080}
+        VITE_QR_MAX_BYTES: ${VITE_QR_MAX_BYTES:-1200}
+    container_name: shalgalt-web
+    restart: unless-stopped
+    depends_on:
+      - api
+    ports:
+      - '${WEB_PORT:-8080}:80'
+    networks: [shalgalt-net]
+
+  # ---------------------------------------------------------------------------
+  # Mailpit — зөвхөн хөгжүүлэлтийн имэйл баригч
+  #   SMTP: 1025,  Веб UI: http://localhost:8025
+  #   Асаах: docker compose --profile dev up -d mail
+  # ---------------------------------------------------------------------------
+  mail:
+    image: axllent/mailpit:latest
+    container_name: shalgalt-mail
+    restart: unless-stopped
+    profiles: ['dev']
+    environment:
+      MP_MAX_MESSAGES: 500
+      MP_SMTP_AUTH_ACCEPT_ANY: 1
+      MP_SMTP_AUTH_ALLOW_INSECURE: 1
+    ports:
+      - '${MAILPIT_SMTP_PORT:-1025}:1025'
+      - '${MAILPIT_UI_PORT:-8025}:8025'
+    networks: [shalgalt-net]
+
+volumes:
+  db-data:
+  api-uploads:
+
+networks:
+  shalgalt-net:
+    driver: bridge

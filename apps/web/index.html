@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="mn">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#4f46e5" />
+    <meta
+      name="description"
+      content="Сурагчийн өмнөх/дараах мэдлэгийн үнэлгээ — QR кодоор, интернэтгүй ч ажиллана"
+    />
+
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+
+    <!-- iOS дээр standalone горимд ажиллах -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="Шалгалт" />
+    <meta name="mobile-web-app-capable" content="yes" />
+
+    <title>Шалгалтын платформ</title>
+  </head>
+  <body class="bg-slate-50 text-slate-900 antialiased">
+    <div id="root"></div>
+    <noscript>
+      <div style="padding: 24px; font-family: Arial, sans-serif">
+        Энэ програм ажиллахад JavaScript шаардлагатай. Браузерынхаа тохиргооноос JavaScript-ийг
+        идэвхжүүлнэ үү.
+      </div>
+    </noscript>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

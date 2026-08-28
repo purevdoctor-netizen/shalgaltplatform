@@ -1,0 +1,59 @@
+{
+  "name": "@shalgalt/api",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Express + Prisma REST API — шалгалт, илгээлт, sync, тайлан, имэйл",
+  "main": "./dist/index.js",
+  "scripts": {
+    "dev": "tsx watch --clear-screen=false src/index.ts",
+    "lan": "tsx src/lan.ts",
+    "build": "node prisma/cli.mjs generate && tsup",
+    "start": "node dist/index.js",
+    "start:lan": "node dist/lan.js",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "db:generate": "node prisma/cli.mjs generate",
+    "db:migrate": "node prisma/cli.mjs migrate dev",
+    "db:deploy": "node prisma/cli.mjs migrate deploy",
+    "db:push": "node prisma/cli.mjs db push --skip-generate",
+    "db:reset": "node prisma/cli.mjs migrate reset --force",
+    "db:seed": "tsx prisma/seed.ts",
+    "admin:create": "tsx prisma/create-admin.ts",
+    "email:check": "tsx src/cli/smtp-check.ts",
+    "db:studio": "node prisma/cli.mjs studio"
+  },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
+  },
+  "dependencies": {
+    "@prisma/client": "^5.22.0",
+    "@shalgalt/shared": "workspace:*",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.1",
+    "express-rate-limit": "^7.4.1",
+    "helmet": "^8.0.0",
+    "multer": "^1.4.5-lts.1",
+    "nanoid": "^5.0.9",
+    "nodemailer": "^6.9.16",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/cookie-parser": "^1.4.7",
+    "@types/cors": "^2.8.17",
+    "@types/express": "^4.17.21",
+    "@types/multer": "^1.4.12",
+    "@types/node": "^22.9.1",
+    "@types/nodemailer": "^6.4.16",
+    "@types/supertest": "^6.0.2",
+    "prisma": "^5.22.0",
+    "supertest": "^7.0.0",
+    "tsup": "^8.3.5",
+    "tsx": "^4.19.2",
+    "typescript": "^5.6.3",
+    "vitest": "^2.1.5"
+  }
+}
