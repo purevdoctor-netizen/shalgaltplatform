@@ -5,6 +5,7 @@
  * 10 асуулт, 12 сурагчийн өгөгдөл тестүүдтэй яг ижил.
  */
 
+import { randomBytes } from 'node:crypto';
 import { PrismaClient } from '@prisma/client';
 import { SEED_EXAM, buildSeedSubmissions } from '@shalgalt/shared';
 // Монорепогийн үндэс дэх `.env`-ыг ачаална (импортын гаж нөлөө нь зориудынх).
@@ -15,7 +16,18 @@ import { createUser } from '../src/services/authService';
 const prisma = new PrismaClient({ datasources: { db: { url: env.DATABASE_URL } } });
 
 const SEED_TEACHER_USERNAME = 'demo.bagsh';
-const SEED_TEACHER_PASSWORD = 'DemoBagsh!2026';
+
+/**
+ * Жишээ багшийн нууц үгийг ажиллах бүрд САНАМСАРГҮЙ үүсгэнэ.
+ *
+ * Урьд нь энд тогтмол утга (`DemoBagsh!2026`) бичээстэй байсан. Энэ файл нь
+ * эх кодын санд байдаг тул — ялангуяа нээлттэй (public) repo дээр — тэр нууц
+ * үгийг хэн ч уншиж, `pnpm db:seed` ажиллуулсан аль ч сервер рүү багшийн
+ * эрхээр нэвтрэх боломжтой байв.
+ *
+ * Одоо нууц үг зөвхөн терминал дээр НЭГ УДАА хэвлэгдэнэ.
+ */
+const SEED_TEACHER_PASSWORD = `Demo${randomBytes(9).toString('base64url')}!1`;
 
 async function main(): Promise<void> {
   console.info('[seed] Эхэлж байна…');
@@ -25,6 +37,7 @@ async function main(): Promise<void> {
 
   // --- Жишээ багшийн данс ---
   let teacher = await prisma.user.findUnique({ where: { username: SEED_TEACHER_USERNAME } });
+  const teacherCreated = teacher === null;
   if (!teacher) {
     const created = await createUser(prisma, {
       username: SEED_TEACHER_USERNAME,
@@ -105,8 +118,13 @@ async function main(): Promise<void> {
   console.info('');
   console.info('  Жишээ багшийн данс:');
   console.info(`    Нэвтрэх нэр : ${SEED_TEACHER_USERNAME}`);
-  console.info(`    Нууц үг     : ${SEED_TEACHER_PASSWORD}`);
-  console.info('    (эхний нэвтрэлтэд солиулна)');
+  if (teacherCreated) {
+    console.info(`    Нууц үг     : ${SEED_TEACHER_PASSWORD}`);
+    console.info('    ⚠ Энэ нууц үг ЗӨВХӨН ОДОО харагдана — хаа нэгтээ тэмдэглэж аваарай.');
+    console.info('    (эхний нэвтрэлтэд солиулна)');
+  } else {
+    console.info('    Нууц үг     : (данс аль хэдийн байсан — өөрчлөгдөөгүй)');
+  }
   console.info('');
   console.info('  Багшийн линк:');
   console.info(`    /teacher/${SEED_EXAM.id}?t=${SEED_EXAM.teacherToken}`);
