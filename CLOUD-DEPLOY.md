@@ -52,28 +52,73 @@
 
 Render нь Git repo-оос deploy хийдэг.
 
-1. https://github.com/signup — бүртгүүлнэ (үнэгүй)
-2. https://github.com/new → repo нэр: `shalgalt-platform` → **Private** сонгоно → **Create**
-3. Компьютер дээрээ:
+**1.1. GitHub данс** — https://github.com/signup (үнэгүй, карт шаардахгүй)
+
+**1.2. Нэг команд** — repo үүсгэж, кодоо байршуулна:
 
 ```powershell
 cd C:\Users\purev.b\burtgel-web\shalgalt-platform
+.\scripts\push-github.ps1
+```
 
-git init
-git branch -M main
-git add .
-git commit -m "Шалгалтын платформ"
+Скрипт дараахыг өөрөө хийнэ:
 
-# <ХЭРЭГЛЭГЧ>-ийг өөрийн GitHub нэрээр солино
+| Алхам | Тайлбар                                                                       |
+| ----- | ----------------------------------------------------------------------------- |
+| 1     | GitHub CLI-г татна (`.tools\gh.exe`) — **админ эрх шаардахгүй**               |
+| 2     | GitHub-д нэвтрүүлнэ — браузер нээгдэнэ, **нэг л удаа**                        |
+| 3     | Нууц файл (`.env`, `*.db`, `logs/`) орсон эсэхийг шалгана — орсон бол ЗОГСОНО |
+| 4     | `shalgalt-platform` нэртэй **хувийн** repo үүсгэнэ                            |
+| 5     | Кодыг push хийнэ                                                              |
+
+Нэвтрэх үед асуух зүйлс:
+
+```
+What account do you want to log into?    → GitHub.com
+What is your preferred protocol?         → HTTPS
+Authenticate Git with your credentials?  → Yes
+How would you like to authenticate?      → Login with a web browser
+```
+
+Дараа нь **8 тэмдэгтийн код** (жишээ: `A1B2-C3D4`) гарна. Түүнийг хуулж
+браузерт нээгдсэн хуудсанд оруулна.
+
+**Сонголтууд:**
+
+```powershell
+.\scripts\push-github.ps1 -RepoName өөр-нэр   # өөр нэртэй repo
+.\scripts\push-github.ps1 -Public             # нийтэд нээлттэй (анхдагчаар хувийн)
+```
+
+> ⚠ `.env` файл **git-д ОРОХГҮЙ** (`.gitignore`-д байгаа). Gmail-ийн App Password,
+> админы нууц үг GitHub дээр гарахгүй. Скрипт үүнийг push бүрд дахин шалгадаг.
+
+<details>
+<summary>Гараар хийх (скрипт ажиллахгүй бол)</summary>
+
+1. https://github.com/new → нэр: `shalgalt-platform` → **Private** → **Create**
+2. Дараа нь:
+
+```powershell
 git remote add origin https://github.com/<ХЭРЭГЛЭГЧ>/shalgalt-platform.git
 git push -u origin main
 ```
 
-> Нэр/нууц үг асуувал: нууц үгийн оронд **Personal Access Token** хэрэгтэй.
-> GitHub → Settings → Developer settings → Personal access tokens → Tokens (classic)
-> → Generate new token → `repo` эрхийг сонгоно.
+Нэр/нууц үг асуувал: нууц үгийн оронд **Personal Access Token** хэрэгтэй.
+GitHub → Settings → Developer settings → Personal access tokens → Tokens (classic)
+→ Generate new token → `repo` эрхийг сонгоно.
 
-> ⚠ `.env` файл **git-д ОРОХГҮЙ** (`.gitignore`-д байгаа). Нууц үг GitHub дээр гарахгүй.
+</details>
+
+**1.3. Цаашид өөрчлөлт оруулах**
+
+```powershell
+git add -A
+git commit -m "тайлбар"
+git push
+```
+
+Render нь push бүрийг мэдэрч **автоматаар дахин deploy** хийнэ.
 
 ---
 
