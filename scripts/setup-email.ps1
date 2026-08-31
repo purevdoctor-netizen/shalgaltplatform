@@ -23,7 +23,7 @@
     # Бүх зүйлийг асууна
 
 .EXAMPLE
-    .\scripts\setup-email.ps1 -Email bagsh@gmail.com -FromName "12-р сургууль" -TestTo purevdoctor@gmail.com
+    .\scripts\setup-email.ps1 -Email bagsh@gmail.com -FromName "12-р сургууль" -TestTo shalgagch@gmail.com
 
 .NOTES
     ⚠ Gmail: энгийн нууц үг АЖИЛЛАХГҮЙ. "App Password" хэрэгтэй:

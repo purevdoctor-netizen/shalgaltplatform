@@ -126,29 +126,51 @@ if (git status --porcelain) {
 # ---------------------------------------------------------------------------
 # 4. Repo үүсгэх / remote холбох
 # ---------------------------------------------------------------------------
-Write-Step "Repo: $account/$RepoName"
+# `origin` аль хэдийн тохируулсан бол ТҮҮНИЙГ баримтална — эс бөгөөс
+# GitHub дээр гараар үүсгэсэн repo-той зэрэгцээ хоёр дахь repo үүсгэчихдэг.
+$existingRemote = @(git remote) -contains 'origin'
 
-$exists = $false
-& $gh repo view "$account/$RepoName" 2>&1 | Out-Null
-if ($LASTEXITCODE -eq 0) { $exists = $true }
-
-if ($exists) {
-    Write-Ok 'Repo аль хэдийн байна'
+if ($existingRemote) {
+    $remoteUrl = git remote get-url origin
+    if ($remoteUrl -match 'github\.com[:/]([^/]+)/([^/.]+)') {
+        $RepoName = $Matches[2]
+        Write-Ok "Одоо байгаа remote ашиглана: $($Matches[1])/$RepoName"
+    } else {
+        Write-Err2 "`origin` нь GitHub-ийн хаяг биш байна: $remoteUrl"
+        exit 1
+    }
 } else {
-    $visibility = if ($Public) { '--public' } else { '--private' }
-    & $gh repo create "$RepoName" $visibility --source=. --remote=origin --description "Сурагчийн өмнөх/дараах үнэлгээний платформ"
-    if ($LASTEXITCODE -ne 0) { Write-Err2 'Repo үүсгэж чадсангүй.'; exit 1 }
-    Write-Ok "Repo үүслээ ($(if ($Public) { 'нийтийн' } else { 'хувийн' }))"
-}
+    Write-Step "Repo: $account/$RepoName"
 
-# remote тохируулах
-$remoteUrl = "https://github.com/$account/$RepoName.git"
-if (git remote 2>$null | Select-String -Pattern '^origin$' -Quiet) {
-    git remote set-url origin $remoteUrl
-} else {
-    git remote add origin $remoteUrl
+    & $gh repo view "$account/$RepoName" 2>&1 | Out-Null
+    if ($LASTEXITCODE -eq 0) {
+        Write-Ok 'Repo аль хэдийн байна'
+    } else {
+        $visibility = if ($Public) { '--public' } else { '--private' }
+        & $gh repo create "$RepoName" $visibility --source=. --remote=origin `
+            --description "Сурагчийн өмнөх/дараах үнэлгээний платформ"
+        if ($LASTEXITCODE -ne 0) { Write-Err2 'Repo үүсгэж чадсангүй.'; exit 1 }
+        Write-Ok "Repo үүслээ ($(if ($Public) { 'нийтийн' } else { 'хувийн' }))"
+    }
+
+    $remoteUrl = "https://github.com/$account/$RepoName.git"
+    if (@(git remote) -contains 'origin') {
+        git remote set-url origin $remoteUrl
+    } else {
+        git remote add origin $remoteUrl
+    }
 }
 Write-Ok "remote: $remoteUrl"
+
+# Public repo бол сануулга — seed.ts доторх demo нууц үг ил болно
+$vis = (& $gh repo view "$RepoName" --json visibility --jq '.visibility' 2>$null)
+if ($vis -eq 'PUBLIC') {
+    Write-Host ''
+    Write-Warn2 'Энэ repo НИЙТЭД НЭЭЛТТЭЙ (public) байна.'
+    Write-Warn2 '`prisma/seed.ts` доторх demo багшийн нууц үгийг хэн ч уншина.'
+    Write-Warn2 'Хувийн болгох:  .tools\gh.exe repo edit --visibility private --accept-visibility-change-consequences'
+    Write-Host ''
+}
 
 # ---------------------------------------------------------------------------
 # 5. Push
@@ -156,10 +178,44 @@ Write-Ok "remote: $remoteUrl"
 Write-Step 'Push хийх'
 
 $branch = git branch --show-current
-git push -u origin $branch
+
+# Алсын салбарт бидэнд байхгүй commit байгаа эсэхийг шалгана.
+# GitHub дээр repo үүсгэхдээ «Add a README» сонговол ийм болдог.
+git fetch origin $branch 2>&1 | Out-Null
+$remoteHead = git rev-parse --verify --quiet "origin/$branch"
+
+$needsForce = $false
+if ($remoteHead) {
+    git merge-base --is-ancestor "origin/$branch" HEAD 2>&1 | Out-Null
+    if ($LASTEXITCODE -ne 0) { $needsForce = $true }
+}
+
+if ($needsForce) {
+    Write-Warn2 'GitHub дээр энэ repo-д аль хэдийн өөр агуулга байна.'
+    Write-Host ''
+    Write-Host '  Алсад байгаа бөгөөд танд БАЙХГҮЙ commit:' -ForegroundColor Yellow
+    git log --oneline "HEAD..origin/$branch" | ForEach-Object { Write-Host "      $_" }
+    Write-Host ''
+    Write-Host '  Дараах файлууд алсад байна:' -ForegroundColor Yellow
+    git ls-tree -r --name-only "origin/$branch" | Select-Object -First 10 | ForEach-Object { Write-Host "      $_" }
+    Write-Host ''
+    Write-Warn2 'Үргэлжлүүлбэл ЭДГЭЭР нь таны кодоор СОЛИГДОНО (буцаах боломжгүй).'
+    Write-Host ''
+
+    $answer = Read-Host '  Дарж бичих үү? (тийм гэж бичнэ үү / өөр юм бичвэл зогсоно)'
+    if ($answer -ne 'тийм') {
+        Write-Err2 'Зогсоов. Юу ч өөрчлөгдөөгүй.'
+        Write-Warn2 "Алсын агуулгыг ХАДГАЛАХ бол:  git pull --rebase origin $branch"
+        exit 1
+    }
+
+    git push -u origin $branch --force-with-lease
+} else {
+    git push -u origin $branch
+}
+
 if ($LASTEXITCODE -ne 0) {
     Write-Err2 'Push амжилтгүй.'
-    Write-Warn2 "Repo дээр аль хэдийн өөр агуулга байвал:  git push -u origin $branch --force"
     exit 1
 }
 

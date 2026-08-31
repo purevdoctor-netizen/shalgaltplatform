@@ -275,7 +275,7 @@ cd C:\Users\purev.b\burtgel-web\shalgalt-platform
 Шууд туршилтын захиатай:
 
 ```powershell
-.\scripts\setup-email.ps1 -Email bagsh@gmail.com -FromName "12-р сургууль" -TestTo purevdoctor@gmail.com
+.\scripts\setup-email.ps1 -Email bagsh@gmail.com -FromName "12-р сургууль" -TestTo shalgagch@gmail.com
 ```
 
 ### Gmail — App Password заавал хэрэгтэй
@@ -318,7 +318,7 @@ Restart-Service ShalgaltPlatform     # үйлчилгээ болгосон бо�
 pnpm --filter @shalgalt/api email:check
 
 # Туршилтын захиа илгээх
-pnpm --filter @shalgalt/api email:check -- purevdoctor@gmail.com
+pnpm --filter @shalgalt/api email:check -- shalgagch@gmail.com
 ```
 
 Эсвэл вэбээс: **админаар нэвтрэх → `/admin/users` → «Имэйлийн тохиргоо (SMTP)»**
