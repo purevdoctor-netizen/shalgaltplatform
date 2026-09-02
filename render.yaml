@@ -84,6 +84,12 @@ services:
       - key: BOOTSTRAP_ADMIN_NAME
         sync: false
 
+      # Нууц үгээ мартсан үед сэргээх ЦОРЫН ГАНЦ арга (үүлэнд CLI байхгүй).
+      # `true` болгоод дахин асаавал BOOTSTRAP_ADMIN_PASSWORD-оор дарж бичнэ.
+      # ⚠ Нэвтэрсний дараа ЗААВАЛ `false` болгоно эсвэл устгана.
+      - key: BOOTSTRAP_ADMIN_RESET
+        sync: false
+
       # --- Имэйл (Gmail App Password) ---
       - key: SMTP_HOST
         value: smtp.gmail.com

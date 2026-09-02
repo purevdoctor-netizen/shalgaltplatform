@@ -97,6 +97,16 @@ const schema = z.object({
   BOOTSTRAP_ADMIN_PASSWORD: z.string().default(''),
   BOOTSTRAP_ADMIN_NAME: z.string().default('Админ'),
 
+  /**
+   * Данс аль хэдийн байсан ч нууц үгийг нь дарж бичнэ.
+   *
+   * Админ нууц үгээ мартвал үүлэн орчинд сэргээх өөр арга байхгүй
+   * (CLI ажиллуулах боломжгүй). Сэргээсний дараа энэ хувьсагчийг
+   * ЗААВАЛ устгана — эс бөгөөс сервер дахин асаах бүрд нууц үг буцаж
+   * тохируулагдана.
+   */
+  BOOTSTRAP_ADMIN_RESET: booleanish,
+
   SMTP_HOST: z.string().default('localhost'),
   SMTP_PORT: z.coerce.number().int().default(1025),
   SMTP_SECURE: booleanish,
