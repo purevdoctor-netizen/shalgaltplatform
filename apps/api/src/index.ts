@@ -52,13 +52,32 @@ async function bootstrapAdmin(): Promise<void> {
     where: { username: normalizeUsername(username) },
   });
 
-  // --- Данс байгаа: зөвхөн RESET=true үед нууц үгийг дарж бичнэ ---
+  // --- Данс байгаа ---
   if (existing) {
-    if (!env.BOOTSTRAP_ADMIN_RESET) {
-      console.info(`[api] BOOTSTRAP: "${username}" данс аль хэдийн байна — алгасав.`);
+    /**
+     * Тохируулга ДУУСААГҮЙ (`mustChangePassword` хэвээр) байвал орчны
+     * хувьсагч дахь нууц үгийг ЭРХ ДЭЭД гэж үзээд дахин тааруулна.
+     *
+     * Учир нь: веб маягтад нууц үг наахад төгсгөлд зай орох нь элбэг.
+     * Тэр зайтай нууц үг хадгалагдчихаад, хүн зайгүйгээр шивэхэд
+     * "нууц үг буруу" гэж гардаг — шалтгааныг нь олох бараг боломжгүй.
+     *
+     * Хэрэглэгч апп дотроо нууц үгээ нэг л удаа сольмогц
+     * `mustChangePassword` false болох тул үүнээс хойш ЭНД ХҮРЭХГҮЙ —
+     * сервер дахин асаахад нууц үг буцаж солигдох аюул байхгүй.
+     */
+    const setupIncomplete = existing.mustChangePassword;
+
+    if (!env.BOOTSTRAP_ADMIN_RESET && !setupIncomplete) {
+      console.info(`[api] BOOTSTRAP: "${username}" данс бэлэн — алгасав.`);
       console.info('[api]   Нууц үгээ мартсан бол BOOTSTRAP_ADMIN_RESET=true болгож дахин асаана уу.');
       return;
     }
+
+    console.info(
+      `[api] BOOTSTRAP: нууц үгийг дахин тааруулж байна ` +
+        `(${env.BOOTSTRAP_ADMIN_RESET ? 'RESET=true' : 'эхний нэвтрэлт хийгдээгүй'}).`,
+    );
 
     const { hash, salt } = await hashPassword(password);
     await prisma.user.update({
@@ -75,9 +94,10 @@ async function bootstrapAdmin(): Promise<void> {
     await revokeAllSessions(prisma, existing.id);
 
     console.info('');
-    console.info(`  ✔ "${username}" дансны нууц үгийг СЭРГЭЭЛЭЭ`);
-    console.info('    ⚠ Нэвтэрсний дараа BOOTSTRAP_ADMIN_RESET ба');
-    console.info('      BOOTSTRAP_ADMIN_PASSWORD хувьсагчийг УСТГАНА УУ.');
+    console.info(`  ✔ "${username}" дансны нууц үгийг дахин тааруулав`);
+    console.info(`    Нэвтрэх нэр : ${normalizeUsername(username)}`);
+    console.info(`    Нууц үг     : BOOTSTRAP_ADMIN_PASSWORD дахь ${password.length} тэмдэгт`);
+    console.info('    ⚠ Нэвтэрч, нууц үгээ сольсны дараа BOOTSTRAP_ADMIN_PASSWORD-ыг УСТГАНА УУ.');
     console.info('');
     return;
   }
