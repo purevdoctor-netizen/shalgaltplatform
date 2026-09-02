@@ -18,15 +18,18 @@ services:
     region: frankfurt
     branch: main
 
-    # pnpm workspace — corepack-оор яг тэр хувилбарыг идэвхжүүлнэ.
+    # pnpm-ыг npm-ээр суулгана.
+    #
+    # ⚠ `corepack` ашиглаж БОЛОХГҮЙ: Node-ын дагалдах corepack нь npm-ийн
+    # гарын үсгийн түлхүүр солигдоход "Cannot find matching keyid" алдаа өгч
+    # build-ыг эхний секундүүдэд унагадаг. `npm install -g` нь найдвартай.
     #
     # ⚠ `migrate deploy` БИШ `db push` ашиглана: одоо байгаа migration файлууд
     # SQLite-д зориулагдсан (PRAGMA, BLOB) тул PostgreSQL дээр ажиллахгүй.
     # `db push` нь schema-г шууд тааруулдаг бөгөөд аль ч provider дээр ажиллана.
     buildCommand: |
-      corepack enable &&
-      corepack prepare pnpm@9.12.3 --activate &&
-      pnpm install --frozen-lockfile=false &&
+      npm install -g pnpm@9.12.3 &&
+      pnpm install --no-frozen-lockfile &&
       pnpm db:push &&
       pnpm build
 
