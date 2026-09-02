@@ -52,12 +52,32 @@ export function healthRouter(prisma: PrismaClient, extra: Record<string, unknown
           : `error: ${message}`;
       }
 
+      /**
+       * Систем тохируулагдсан эсэх — админ данс үүссэн үү.
+       *
+       * Зөвхөн ТОО буцаана: нэр, имэйл, нууц үгийн талаар юу ч задруулахгүй.
+       * Үүнгүйгээр "нэвтэрч чадахгүй байна" гэсэн гомдлыг оношлох арга
+       * байхгүй — данс огт үүсээгүй юү, эсвэл нууц үг л буруу юү гэдгийг
+       * ялгах боломжгүй болдог.
+       */
+      let setup: Record<string, unknown> = { checked: false };
+      try {
+        const [admins, users] = await Promise.all([
+          prisma.user.count({ where: { role: 'admin', isActive: true } }),
+          prisma.user.count(),
+        ]);
+        setup = { checked: true, activeAdmins: admins, totalUsers: users };
+      } catch {
+        // Хүснэгт байхгүй бол дээрх `database` талбарт аль хэдийн тусгагдсан
+      }
+
       res.json({
         status: database === 'ok' ? 'ok' : 'degraded',
         time: new Date().toISOString(),
         uptimeSec: Math.round((Date.now() - startedAt) / 1000),
         provider: env.DATABASE_PROVIDER,
         database,
+        setup,
         /** Серверийн LAN хаягууд — QR кодод зөв хаяг санал болгоход хэрэглэнэ. */
         lanAddresses: lanAddresses(),
         ...extra,
