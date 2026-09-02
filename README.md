@@ -360,6 +360,7 @@ pnpm load -- --n 100 --url http://192.168.1.42:3000
 | `.\scripts\setup-server.ps1`   | LAN серверийг бүрэн бэлдэх (build + сан + firewall + үйлчилгээ) |
 | `.\scripts\finish-deploy.ps1`  | Админ эрх шаардах алхмууд (firewall, Windows Service)           |
 | `.\scripts\setup-email.ps1`    | Gmail App Password холбож, туршилтын захидал илгээх             |
+| `.\scripts\set-smtp-password.ps1` | Зөвхөн App Password-ыг **цонхоор** оруулах (консол наалт ажиллахгүй үед) |
 | `.\scripts\restart-server.ps1` | `.env` өөрчилсний дараа серверийг дахин асаах                   |
 | `.\scripts\backup.ps1`         | Өгөгдлийн сангийн нөөц хуулбар                                  |
 | `.\scripts\push-github.ps1`    | GitHub repo үүсгэж кодоо байршуулах (нууц файл шалгана)         |
